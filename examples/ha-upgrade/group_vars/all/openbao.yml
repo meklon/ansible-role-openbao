@@ -21,4 +21,3 @@ openbao_package_name: "{{ _openbao_package_map[ansible_facts['os_family']] | def
 # IMPORTANT: Replace this placeholder with a real root/admin token
 # before running the example.
 openbao_admin_token: "changeme-root-token"
-
