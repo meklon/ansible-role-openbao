@@ -191,6 +191,7 @@ seal "{{ seal.name }}" {
   address = "{{ seal.address }}"
   token = "{{ seal.token }}"
   key_name = "{{ seal.key_name }}"
+  mount_path = "{{ seal.mount_path | default('transit/') }}"
 {% elif seal.name == 'static' %}
   current_key_id = "{{ seal.current_key_id }}"
   current_key = "{{ seal.current_key }}"

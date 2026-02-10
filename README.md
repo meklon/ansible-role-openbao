@@ -308,6 +308,7 @@ openbao_api_addr: ""
 #     address: "http://127.0.0.1:8200"
 #     token: "s.xyz123"
 #     key_name: "autounseal"
+#     mount_path: "transit/"
 #
 # Example for Static Key:
 # openbao_seal:

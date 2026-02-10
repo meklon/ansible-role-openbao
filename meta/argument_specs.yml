@@ -226,6 +226,10 @@ argument_specs:
             type: "str"
             required: false
             description: "Key name for Transit seal."
+          mount_path:
+            type: "str"
+            required: false
+            description: "Mount path to the Transit secret engine (defaults to 'transit/')."
           # AliCloud KMS parameters
           key_id:
             type: "str"
