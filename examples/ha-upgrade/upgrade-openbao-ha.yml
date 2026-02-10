@@ -158,7 +158,7 @@
         BAO_ADDR: "{{ openbao_api_addr }}"
       register: openbao_cluster_status
       changed_when: false
-      run_once: true
+      run_once: true  # noqa: run-once[task]
 
     - name: Assert that the cluster reports an active HA mode
       ansible.builtin.assert:
@@ -167,4 +167,4 @@
           - (openbao_cluster_status.stdout | from_json).ha_mode == 'active'
         success_msg: "OpenBao cluster reports active HA mode after upgrade."
         fail_msg: "OpenBao cluster does not report active HA mode after upgrade."
-      run_once: true
+      run_once: true  # noqa: run-once[task]
