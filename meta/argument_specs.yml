@@ -221,7 +221,7 @@ argument_specs:
           token:
             type: "str"
             required: false
-            description: "Token for Transit seal."
+            description: "Token for Transit seal (optional; can be omitted when using other authentication methods like AppRole or AWS IAM)."
           key_name:
             type: "str"
             required: false

@@ -189,7 +189,9 @@ seal "{{ seal.name }}" {
 
 {% elif seal.name == 'transit' %}
   address = "{{ seal.address }}"
+{% if seal.token is defined %}
   token = "{{ seal.token }}"
+{% endif %}
   key_name = "{{ seal.key_name }}"
   mount_path = "{{ seal.mount_path | default('transit/') }}"
 {% elif seal.name == 'static' %}

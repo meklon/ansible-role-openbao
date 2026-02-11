@@ -311,9 +311,6 @@
       - item.address is defined
       - item.address is string
       - item.address | length > 0
-      - item.token is defined
-      - item.token is string
-      - item.token | length > 0
       - item.key_name is defined
       - item.key_name is string
       - item.key_name | length > 0
