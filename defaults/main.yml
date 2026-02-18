@@ -2,6 +2,11 @@
 
 # defaults file for openbao
 
+# Whether to configure and manage the OpenBao server. When false,
+# only the OpenBao package will be installed (required for the agent).
+# Set to false to use this role for agent-only deployments.
+openbao_server_enable: true
+
 # Version of OpenBao to install. This value is used to select the
 # package version from your configured package repositories.
 # Example: "2.5.0"
@@ -168,7 +173,6 @@ openbao_api_addr: ""
 #     pin: "1234"
 #     key_label: "label"
 #
-
 #
 # Example for Transit:
 # openbao_seal:
@@ -434,3 +438,45 @@ openbao_plugin_cleanup: false
 #     environment:
 #       BAO_ADDR: "http://127.0.0.1:8200"
 #       BAO_TOKEN: "<root or admin token>"
+
+# OpenBao Agent configuration.
+# When openbao_agent_config is filled (non-empty string), the agent will be
+# configured and started. Leave empty to skip agent configuration.
+#
+# The agent configuration should be provided as HCL (HashiCorp Configuration Language).
+# You can provide it inline, via lookup('file', '...'), or using your own template.
+#
+# Example minimal agent configuration:
+# openbao_agent_config: |
+#   vault {
+#     address = "http://127.0.0.1:8200"
+#   }
+#   auto_auth {
+#     method "token_file" {
+#       config {
+#         token_file_path = "/tmp/vault-token"
+#       }
+#     }
+#     sink "file" {
+#       config {
+#         path = "/tmp/agent-token"
+#       }
+#     }
+#   }
+openbao_agent_config: ""
+
+# Path where the agent configuration file will be placed.
+openbao_agent_config_path: "/etc/openbao/openbao-agent.hcl"
+
+# Environment variables to inject into the OpenBao agent systemd service.
+# Use this to pass secrets or configuration needed by the agent.
+# Example:
+# openbao_agent_environment:
+#   BAO_ADDR: "http://127.0.0.1:8200"
+openbao_agent_environment: {}
+
+# Path to the environment file for the OpenBao agent systemd service.
+openbao_agent_env_path: "/etc/openbao/openbao-agent.env"
+
+# Binary path for OpenBao agent command. This is needed for the agent service to start.
+openbao_agent_binary: "/usr/bin/bao"

@@ -2,7 +2,7 @@
 - name: Verify
   hosts: all
   become: true
-  gather_facts: true
+  gather_facts: false
 
   tasks:
     - name: Verify OpenBao binary works
@@ -21,14 +21,7 @@
         openbao_root_token: "{{ (openbao_initialize.stdout | from_json).root_token }}"
 
     - name: Register plugins
-      ansible.builtin.command:
-        argv:
-          - bao
-          - plugin
-          - register
-          - "-sha256={{ item.sha256 }}"
-          - "{{ item.type }}"
-          - "{{ item.name }}"
+      ansible.builtin.command: bao plugin register -sha256={{ item.sha256 }} {{ item.type }} {{ item.name }}
       environment:
         BAO_ADDR: http://127.0.0.1:8200
         BAO_TOKEN: "{{ openbao_root_token }}"
@@ -64,4 +57,151 @@
             | selectattr('type', 'equalto', 'secret')
             | selectattr('name', 'equalto', 'openbao-plugin-secrets-aws')
             | list | length) > 0
+        quiet: true
+
+    - name: Enable AppRole auth method
+      ansible.builtin.command: bao auth enable approle
+      changed_when: true
+      environment:
+        BAO_ADDR: http://127.0.0.1:8200
+        BAO_TOKEN: "{{ openbao_root_token }}"
+
+    - name: Create policy file for agent
+      ansible.builtin.copy:
+        content: |
+          path "secret/data/test-agent" {
+            capabilities = ["read"]
+          }
+          path "secret/data/*" {
+            capabilities = ["read", "list"]
+          }
+        dest: /tmp/agent-policy.hcl
+        mode: "0600"
+
+    - name: Create policy for agent to read secrets
+      ansible.builtin.command: bao policy write agent-policy /tmp/agent-policy.hcl
+      changed_when: true
+      environment:
+        BAO_ADDR: http://127.0.0.1:8200
+        BAO_TOKEN: "{{ openbao_root_token }}"
+
+    - name: Clean up temporary policy file
+      ansible.builtin.file:
+        path: /tmp/agent-policy.hcl
+        state: absent
+
+    - name: Create AppRole for agent
+      ansible.builtin.command: bao write auth/approle/role/agent-role token_policies=default,agent-policy token_ttl=1h token_max_ttl=4h bind_secret_id=true
+      changed_when: true
+      environment:
+        BAO_ADDR: http://127.0.0.1:8200
+        BAO_TOKEN: "{{ openbao_root_token }}"
+
+    - name: Get AppRole Role ID
+      ansible.builtin.command: bao read -format=json auth/approle/role/agent-role/role-id
+      environment:
+        BAO_ADDR: http://127.0.0.1:8200
+        BAO_TOKEN: "{{ openbao_root_token }}"
+      changed_when: false
+      register: approle_role_id
+
+    - name: Create Secret ID for AppRole
+      ansible.builtin.command: bao write -format=json -f auth/approle/role/agent-role/secret-id
+      changed_when: true
+      environment:
+        BAO_ADDR: http://127.0.0.1:8200
+        BAO_TOKEN: "{{ openbao_root_token }}"
+      register: approle_secret_id
+
+    - name: Write AppRole Role ID to file
+      ansible.builtin.copy:
+        content: "{{ (approle_role_id.stdout | from_json).data.role_id }}"
+        dest: /opt/openbao/approle-role-id
+        owner: openbao
+        group: openbao
+        mode: "0600"
+
+    - name: Write AppRole Secret ID to file
+      ansible.builtin.copy:
+        content: "{{ (approle_secret_id.stdout | from_json).data.secret_id }}"
+        dest: /opt/openbao/approle-secret-id
+        owner: openbao
+        group: openbao
+        mode: "0600"
+
+    - name: Restart OpenBao agent to use AppRole authentication
+      ansible.builtin.systemd:
+        name: openbao-agent
+        state: restarted
+
+    - name: Wait for agent to authenticate with AppRole
+      ansible.builtin.pause:
+        seconds: 5
+
+    - name: Verify agent token file exists
+      ansible.builtin.stat:
+        path: /opt/openbao/agent-token
+      register: agent_token_stat
+
+    - name: Assert agent token file exists
+      ansible.builtin.assert:
+        that:
+          - agent_token_stat.stat.exists
+          - agent_token_stat.stat.isreg
+        quiet: true
+
+    - name: Read agent token from file
+      ansible.builtin.slurp:
+        src: /opt/openbao/agent-token
+      register: agent_token_content
+
+    - name: Set agent token fact
+      ansible.builtin.set_fact:
+        agent_token: "{{ agent_token_content.content | b64decode | trim }}"
+
+    - name: Test agent token by looking up token info
+      ansible.builtin.command: bao token lookup -format=json
+      environment:
+        BAO_ADDR: http://127.0.0.1:8200
+        BAO_TOKEN: "{{ agent_token }}"
+      changed_when: false
+      register: agent_token_lookup
+
+    - name: Assert agent token is valid
+      ansible.builtin.assert:
+        that:
+          - agent_token_lookup.rc == 0
+          - agent_token_lookup.stdout is defined
+          - agent_token_lookup.stdout | length > 0
+        quiet: true
+
+    - name: Enable KV v2 secret engine for testing at secret/ path
+      ansible.builtin.command: bao secrets enable -path=secret -version=2 kv
+      changed_when: true
+      environment:
+        BAO_ADDR: http://127.0.0.1:8200
+        BAO_TOKEN: "{{ openbao_root_token }}"
+
+    - name: Create test secret with root token
+      ansible.builtin.command: bao kv put secret/test-agent value=test-success
+      changed_when: true
+      environment:
+        BAO_ADDR: http://127.0.0.1:8200
+        BAO_TOKEN: "{{ openbao_root_token }}"
+
+    - name: Test agent token can read secret
+      ansible.builtin.command: bao kv get -format=json secret/test-agent
+      environment:
+        BAO_ADDR: http://127.0.0.1:8200
+        BAO_TOKEN: "{{ agent_token }}"
+      changed_when: false
+      register: agent_token_read
+
+    - name: Assert agent token can read secret
+      ansible.builtin.assert:
+        that:
+          - agent_token_read.rc == 0
+          - agent_token_read.stdout is defined
+          - agent_token_read.stdout | length > 0
+          - "'data' in (agent_token_read.stdout | from_json)"
         quiet: true

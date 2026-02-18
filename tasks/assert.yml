@@ -30,6 +30,13 @@
       - openbao_ui is boolean
     quiet: true
 
+- name: assert | Test openbao_server_enable
+  ansible.builtin.assert:
+    that:
+      - openbao_server_enable is defined
+      - openbao_server_enable is boolean
+    quiet: true
+
 - name: assert | Test openbao_storage
   ansible.builtin.assert:
     that:
@@ -39,6 +46,8 @@
       - openbao_storage.type is string
       - openbao_storage.type in [ 'file', 'inmem', 'raft', 'postgresql' ]
     quiet: true
+  when:
+    - openbao_server_enable | default(true) | bool
 
 - name: assert | Test openbao_storage file parameters
   ansible.builtin.assert:
@@ -48,6 +57,7 @@
       - openbao_storage.path | length > 0
     quiet: true
   when:
+    - openbao_server_enable | default(true) | bool
     - openbao_storage.type == 'file'
 
 - name: assert | Test openbao_storage raft parameters
@@ -61,6 +71,7 @@
       - openbao_storage.node_id | length > 0
     quiet: true
   when:
+    - openbao_server_enable | default(true) | bool
     - openbao_storage.type == 'raft'
 
 - name: assert | Test cluster address for raft storage
@@ -71,6 +82,7 @@
       - openbao_cluster_addr | length > 0
     quiet: true
   when:
+    - openbao_server_enable | default(true) | bool
     - openbao_storage.type == 'raft'
 
 - name: assert | Test API address for raft storage
@@ -81,6 +93,7 @@
       - openbao_api_addr | length > 0
     quiet: true
   when:
+    - openbao_server_enable | default(true) | bool
     - openbao_storage.type == 'raft'
 
 - name: assert | Test openbao_storage postgresql parameters
@@ -720,3 +733,45 @@
       - openbao_audit_directories_mode is string
       - openbao_audit_directories_mode | length > 0
     quiet: true
+
+- name: assert | Test openbao_agent_config
+  ansible.builtin.assert:
+    that:
+      - openbao_agent_config is defined
+      - openbao_agent_config is string
+    quiet: true
+
+- name: assert | Test openbao_agent_config is not empty when agent is enabled
+  ansible.builtin.assert:
+    that:
+      - openbao_agent_config | length > 0
+    quiet: true
+  when:
+    - openbao_agent_config | default('') | length > 0
+
+- name: assert | Test openbao_agent_config_path
+  ansible.builtin.assert:
+    that:
+      - openbao_agent_config_path is defined
+      - openbao_agent_config_path is string
+      - openbao_agent_config_path | length > 0
+    quiet: true
+  when:
+    - openbao_agent_config | default('') | length > 0
+
+- name: assert | Test openbao_agent_environment
+  ansible.builtin.assert:
+    that:
+      - openbao_agent_environment is defined
+      - openbao_agent_environment is mapping
+    quiet: true
+
+- name: assert | Test openbao_agent_env_path
+  ansible.builtin.assert:
+    that:
+      - openbao_agent_env_path is defined
+      - openbao_agent_env_path is string
+      - openbao_agent_env_path | length > 0
+    quiet: true
+  when:
+    - openbao_agent_config | default('') | length > 0

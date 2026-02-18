@@ -1,0 +1,203 @@
+---
+# tasks file for openbao server
+
+- name: server | Ensure OpenBao plugin directory exists
+  ansible.builtin.file:
+    path: "{{ openbao_plugin_directory }}"
+    state: directory
+    owner: openbao
+    group: openbao
+    mode: "0755"
+  when:
+    - openbao_plugin_directory is defined
+    - openbao_plugin_directory | length > 0
+    - openbao_plugins | length > 0
+
+- name: server | Download OpenBao plugins
+  ansible.builtin.get_url:
+    url: "{{ item.download_url }}"
+    dest: "{{ openbao_download_dir.rstrip('/') }}/{{ item.name }}-{{ item.version }}.tar.gz"
+    mode: "0644"
+    validate_certs: "{{ openbao_plugin_validate_certs }}"
+  loop: "{{ openbao_plugins }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - openbao_plugins | length > 0
+
+- name: server | Extract OpenBao plugins
+  ansible.builtin.unarchive:
+    src: "{{ openbao_download_dir.rstrip('/') }}/{{ item.name }}-{{ item.version }}.tar.gz"
+    dest: "{{ openbao_download_dir.rstrip('/') }}/"
+    remote_src: true
+    creates: "{{ openbao_download_dir.rstrip('/') }}/{{ (item.download_url | basename) | regex_replace('\\.tar\\.gz$', '') }}"
+  loop: "{{ openbao_plugins }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - openbao_plugins | length > 0
+
+- name: server | Install OpenBao plugins
+  ansible.builtin.copy:
+    src: "{{ openbao_download_dir.rstrip('/') }}/{{ (item.download_url | basename) | regex_replace('\\.tar\\.gz$', '') }}"
+    dest: "{{ openbao_plugin_directory }}/{{ item.name }}"
+    owner: openbao
+    group: openbao
+    mode: "0755"
+    remote_src: true
+  loop: "{{ openbao_plugins }}"
+  loop_control:
+    label: "{{ item.name }}"
+  notify:
+    - Restart OpenBao
+  when:
+    - openbao_plugins | length > 0
+
+- name: server | Compute SHA256 for installed plugins
+  ansible.builtin.stat:
+    path: "{{ openbao_plugin_directory }}/{{ item.name }}"
+    checksum_algorithm: sha256
+  loop: "{{ openbao_plugins }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: openbao_plugin_stats
+  when:
+    - openbao_plugins | length > 0
+
+- name: server | Show registration guidance for installed plugins (with SHA256)
+  ansible.builtin.debug:
+    msg: >-
+      Register plugin '{{ item.item.name }}' once OpenBao is running and you have a token:
+      vault write sys/plugins/catalog/secret/{{ item.item.name }} sha256={{ item.stat.checksum }} command="{{ openbao_plugin_directory }}/{{ item.item.name }}"
+  loop: "{{ openbao_plugin_stats.results }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+  when:
+    - openbao_plugins | length > 0
+
+- name: server | Clean up downloaded plugin archives
+  ansible.builtin.file:
+    path: "{{ openbao_download_dir.rstrip('/') }}/{{ item.name }}-{{ item.version }}.tar.gz"
+    state: absent
+  loop: "{{ openbao_plugins }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - openbao_plugins | length > 0
+    - openbao_plugin_cleanup
+
+- name: server | Clean up extracted plugin binaries
+  ansible.builtin.file:
+    path: "{{ openbao_download_dir.rstrip('/') }}/{{ (item.download_url | basename) | regex_replace('\\.tar\\.gz$', '') }}"
+    state: absent
+  loop: "{{ openbao_plugins }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - openbao_plugins | length > 0
+    - openbao_plugin_cleanup
+
+- name: server | Ensure TLS directory exists
+  ansible.builtin.file:
+    path: "{{ openbao_tls.directory | default('/opt/openbao/tls') }}"
+    state: directory
+    owner: "{{ openbao_tls.owner | default('openbao') }}"
+    group: "{{ openbao_tls.group | default('openbao') }}"
+    mode: "0755"
+  when:
+    - openbao_tls | length > 0
+
+- name: server | Deploy TLS certificate
+  ansible.builtin.copy:
+    content: "{{ openbao_tls.cert_content }}"
+    dest: "{{ openbao_tls.directory | default('/opt/openbao/tls') }}/{{ openbao_tls.cert_file | default('tls.crt') }}"
+    owner: "{{ openbao_tls.owner | default('openbao') }}"
+    group: "{{ openbao_tls.group | default('openbao') }}"
+    mode: "{{ openbao_tls.cert_mode | default('0644') }}"
+    backup: true
+  when:
+    - openbao_tls | length > 0
+    - openbao_tls.cert_content is defined
+    - openbao_tls.cert_content | length > 0
+  notify:
+    - Reload OpenBao
+
+- name: server | Deploy TLS private key
+  ansible.builtin.copy:
+    content: "{{ openbao_tls.key_content }}"
+    dest: "{{ openbao_tls.directory | default('/opt/openbao/tls') }}/{{ openbao_tls.key_file | default('tls.key') }}"
+    owner: "{{ openbao_tls.owner | default('openbao') }}"
+    group: "{{ openbao_tls.group | default('openbao') }}"
+    mode: "{{ openbao_tls.key_mode | default('0600') }}"
+    backup: true
+  when:
+    - openbao_tls | length > 0
+    - openbao_tls.key_content is defined
+    - openbao_tls.key_content | length > 0
+  notify:
+    - Reload OpenBao
+
+- name: server | Deploy TLS CA certificate
+  ansible.builtin.copy:
+    content: "{{ openbao_tls.ca_content }}"
+    dest: "{{ openbao_tls.directory | default('/opt/openbao/tls') }}/{{ openbao_tls.ca_file | default('ca.crt') }}"
+    owner: "{{ openbao_tls.owner | default('openbao') }}"
+    group: "{{ openbao_tls.group | default('openbao') }}"
+    mode: "{{ openbao_tls.ca_mode | default('0644') }}"
+    backup: true
+  when:
+    - openbao_tls | length > 0
+    - openbao_tls.ca_content is defined
+    - openbao_tls.ca_content | length > 0
+  notify:
+    - Reload OpenBao
+
+- name: server | Ensure storage path exists for file/raft backends
+  ansible.builtin.file:
+    path: "{{ openbao_storage.path }}"
+    state: directory
+    owner: openbao
+    group: openbao
+    mode: "0750"
+  when:
+    - openbao_storage.type in [ 'file', 'raft' ]
+
+- name: server | Ensure audit log directories exist for file audit devices
+  ansible.builtin.file:
+    path: "{{ item.options.file_path | dirname }}"
+    state: directory
+    owner: openbao
+    group: openbao
+    mode: "{{ openbao_audit_directories_mode }}"
+  loop: "{{ openbao_audit_devices }}"
+  loop_control:
+    label: "{{ item.options.file_path | dirname | default('') }}"
+  when:
+    - openbao_audit_devices | length > 0
+    - item.type == 'file'
+    - item.options is defined
+    - item.options.file_path is defined
+
+- name: server | Configure OpenBao (without orchestration)
+  ansible.builtin.template:
+    src: openbao.hcl.j2
+    dest: /etc/openbao/openbao.hcl
+    owner: openbao
+    group: openbao
+    mode: "0600"
+  notify:
+    - Restart OpenBao
+  when:
+    - openbao_initialize | length == 0
+
+- name: server | Self Initialization | Include self_init.yml
+  ansible.builtin.include_tasks:
+    file: self_init.yml
+  when:
+    - openbao_initialize | length > 0
+
+- name: server | Manage OpenBao service
+  ansible.builtin.systemd:
+    name: openbao
+    state: started
+    enabled: true

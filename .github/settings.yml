@@ -3,6 +3,6 @@
 # Ansible managed
 #
 repository:
-  description: Install and configure openbao on your system.
+  description: Install and configure OpenBao server and/or OpenBao agent on your system.
   homepage: https://robertdebock.nl/
   topics: openbao, application, cloud, database, infrastructure, linux, storage, security, system, tools, ansible, molecule, playbook

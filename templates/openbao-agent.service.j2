@@ -1,0 +1,39 @@
+{{ ansible_managed | comment }}
+
+[Unit]
+Description=OpenBao Agent
+Documentation=https://openbao.org/docs/agent-and-proxy/agent/
+Requires=network-online.target
+After=network-online.target
+ConditionFileNotEmpty={{ openbao_agent_config_path }}
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Service]
+Type=notify
+{% if openbao_agent_environment | length > 0 %}
+EnvironmentFile=-{{ openbao_agent_env_path }}
+{% endif %}
+User=openbao
+Group=openbao
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/opt/openbao
+PrivateTmp=yes
+PrivateDevices=yes
+SecureBits=keep-caps
+AmbientCapabilities=CAP_IPC_LOCK
+CapabilityBoundingSet=CAP_SYSLOG CAP_IPC_LOCK
+NoNewPrivileges=yes
+ExecStart={{ openbao_agent_binary }} agent -config={{ openbao_agent_config_path }}
+ExecReload=/bin/kill --signal HUP $MAINPID
+KillMode=process
+KillSignal=SIGINT
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+LimitNOFILE=65536
+LimitMEMLOCK=infinity
+
+[Install]
+WantedBy=multi-user.target

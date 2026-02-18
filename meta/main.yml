@@ -2,7 +2,7 @@
 galaxy_info:
   author: robertdebock
   role_name: openbao
-  description: Install and configure openbao on your system.
+  description: Install and configure OpenBao server and/or OpenBao agent on your system.
   license: Apache-2.0
   company: none
   min_ansible_version: "2.12"
