@@ -78,17 +78,3 @@
   ansible.builtin.package:
     name: "{{ openbao_package_name }}"
     state: present
-  notify:
-    - Restart OpenBao
-
-- name: Configure and manage OpenBao server
-  ansible.builtin.import_tasks:
-    file: server.yml
-  when:
-    - openbao_server_enable | default(true) | bool
-
-- name: Configure and start OpenBao agent
-  ansible.builtin.import_tasks:
-    file: agent.yml
-  when:
-    - openbao_agent_config | default('') | length > 0
