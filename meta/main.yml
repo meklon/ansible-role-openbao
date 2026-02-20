@@ -5,23 +5,27 @@ galaxy_info:
   description: Install OpenBao on your system.
   license: Apache-2.0
   company: none
-  min_ansible_version: "2.12"
-
+  min_ansible_version: '2.12'
   platforms:
+    - name: Amazon
+      versions:
+        - Candidate
     - name: Debian
       versions:
-        - all
+        - bullseye
+        - bookworm
+        - trixie
     - name: EL
       versions:
-        - all
+        - '9'
     - name: Fedora
       versions:
-        - all
+        - '42'
+        - '40'
     - name: Ubuntu
       versions:
         - jammy
         - noble
-
   galaxy_tags:
     - openbao
     - application
@@ -33,5 +37,4 @@ galaxy_info:
     - security
     - system
     - tools
-
 dependencies: []
