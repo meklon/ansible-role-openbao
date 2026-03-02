@@ -1,0 +1,14 @@
+---
+# handlers file for openbao
+
+- name: Restart OpenBao
+  ansible.builtin.systemd:
+    name: openbao
+    state: restarted
+    daemon_reload: true
+
+- name: Reload OpenBao
+  ansible.builtin.systemd:
+    name: openbao
+    state: reloaded
+    daemon_reload: true

@@ -2,26 +2,26 @@
 galaxy_info:
   author: robertdebock
   role_name: openbao
-  description: Install OpenBao on your system.
+  description: Install and configure openbao on your system.
   license: Apache-2.0
   company: none
-  min_ansible_version: '2.12'
+  min_ansible_version: "2.12"
+
   platforms:
     - name: Debian
       versions:
-        - bullseye
-        - bookworm
-        - trixie
+        - all
     - name: EL
       versions:
-        - '9'
+        - all
     - name: Fedora
       versions:
-        - '42'
+        - all
     - name: Ubuntu
       versions:
         - jammy
         - noble
+
   galaxy_tags:
     - openbao
     - application
@@ -33,4 +33,5 @@ galaxy_info:
     - security
     - system
     - tools
+
 dependencies: []
