@@ -31,6 +31,8 @@ This example is taken from [`molecule/default/converge.yml`](https://github.com/
         - name: tcp
           address: "127.0.0.1:8200"
           tls_disable: true
+          telemetry:
+            unauthenticated_metrics_access: true
       openbao_telemetry:
         prometheus_retention_time: "30s"
         disable_hostname: true
@@ -205,6 +207,8 @@ penbao_storage:
 #     address: "0.0.0.0:8200"
 #     tls_cert_file: "/opt/openbao/tls/tls.crt"
 #     tls_key_file: "/opt/openbao/tls/tls.key"
+#     telemetry:
+#       unauthenticated_metrics_access: true
 #
 # Example for multiple listeners:
 # openbao_listeners:
@@ -315,7 +319,6 @@ openbao_seal: []
 # openbao_telemetry:
 #   prometheus_retention_time: "30s"
 #   disable_hostname: true
-#   unauthenticated_metrics_access: true
 #
 # Example for StatsD:
 # openbao_telemetry:

@@ -113,6 +113,11 @@ listener "{{ listener.name }}" {
 {% if listener.tls_key_file is defined %}
   tls_key_file = "{{ listener.tls_key_file }}"
 {% endif %}
+{% if listener.telemetry is defined and listener.telemetry.unauthenticated_metrics_access is defined %}
+  telemetry {
+    unauthenticated_metrics_access = {{ listener.telemetry.unauthenticated_metrics_access | ternary('true', 'false') }}
+  }
+{% endif %}
 {% if listener.proxy_protocol_behavior is defined %}
   proxy_protocol_behavior = "{{ listener.proxy_protocol_behavior }}"
 {% endif %}
@@ -319,9 +324,6 @@ telemetry {
 {% endif %}
 {% if openbao_telemetry.prometheus_retention_time is defined %}
   prometheus_retention_time = "{{ openbao_telemetry.prometheus_retention_time }}"
-{% endif %}
-{% if openbao_telemetry.unauthenticated_metrics_access is defined %}
-  unauthenticated_metrics_access = {{ openbao_telemetry.unauthenticated_metrics_access | ternary('true', 'false') }}
 {% endif %}
 {% if openbao_telemetry.stackdriver_project_id is defined %}
   stackdriver_project_id = "{{ openbao_telemetry.stackdriver_project_id }}"

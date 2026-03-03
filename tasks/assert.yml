@@ -118,6 +118,16 @@
   loop_control:
     label: "{{ item.name }}"
 
+- name: assert | Test telemetry parameters for listeners
+  ansible.builtin.assert:
+    that:
+      - (item.telemetry is not defined) or (item.telemetry is mapping)
+      - (item.telemetry.unauthenticated_metrics_access is not defined) or (item.telemetry.unauthenticated_metrics_access is boolean)
+    quiet: true
+  loop: "{{ openbao_listeners }}"
+  loop_control:
+    label: "{{ item.name }}"
+
 - name: assert | Test openbao_seal
   ansible.builtin.assert:
     that:
