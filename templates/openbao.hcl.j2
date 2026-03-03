@@ -320,6 +320,9 @@ telemetry {
 {% if openbao_telemetry.prometheus_retention_time is defined %}
   prometheus_retention_time = "{{ openbao_telemetry.prometheus_retention_time }}"
 {% endif %}
+{% if openbao_telemetry.unauthenticated_metrics_access is defined %}
+  unauthenticated_metrics_access = {{ openbao_telemetry.unauthenticated_metrics_access | ternary('true', 'false') }}
+{% endif %}
 {% if openbao_telemetry.stackdriver_project_id is defined %}
   stackdriver_project_id = "{{ openbao_telemetry.stackdriver_project_id }}"
 {% endif %}

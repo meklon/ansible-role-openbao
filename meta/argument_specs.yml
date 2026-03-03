@@ -445,6 +445,10 @@ argument_specs:
             type: "str"
             required: false
             description: "Retention time for Prometheus metrics (e.g., '24h')."
+          unauthenticated_metrics_access:
+            type: "bool"
+            required: false
+            description: "If true, enables unauthenticated access to the /v1/sys/metrics endpoint."
           # Stackdriver parameters
           stackdriver_project_id:
             type: "str"

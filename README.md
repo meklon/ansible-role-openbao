@@ -315,6 +315,7 @@ openbao_seal: []
 # openbao_telemetry:
 #   prometheus_retention_time: "30s"
 #   disable_hostname: true
+#   unauthenticated_metrics_access: true
 #
 # Example for StatsD:
 # openbao_telemetry:
