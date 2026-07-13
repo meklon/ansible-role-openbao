@@ -16,8 +16,11 @@ _openbao_arch:
 
 openbao_arch: "{{ _openbao_arch[ansible_architecture] | default(_openbao_arch['default']) }}"
 
+# Release asset name prefix: renamed from "bao" to "openbao" starting with v2.5.0
+_openbao_pkg_name_prefix: "{{ 'openbao' if openbao_version is version('2.5.0', '>=') else 'bao' }}"
+
 # Construct the package URL based on version, OS, and architecture
-openbao_package_url: "{{ 'https://github.com/openbao/openbao/releases/download/v' + openbao_version + '/bao_' + openbao_version + '_linux_' + openbao_arch + '.' + openbao_pkg_ext }}"
+openbao_package_url: "{{ 'https://github.com/openbao/openbao/releases/download/v' + openbao_version + '/' + _openbao_pkg_name_prefix + '_' + openbao_version + '_linux_' + openbao_arch + '.' + openbao_pkg_ext }}"
 
 # Local package path for downloaded file
 openbao_local_pkg: "{{ openbao_download_dir.rstrip('/') + '/' + (openbao_package_url | basename) }}"
